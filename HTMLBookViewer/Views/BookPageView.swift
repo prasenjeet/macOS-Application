@@ -1,10 +1,11 @@
 import SwiftUI
+import QuartzCore
 
 struct BookPageView: View {
     @ObservedObject var viewModel: BookViewModel
-    @State private var rotation: Double = 0
     @State private var displayedIndex: Int = 0
     @State private var isAnimating: Bool = false
+    @State private var goingForward: Bool = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -14,69 +15,86 @@ struct BookPageView: View {
                 ZStack {
                     BookBackground()
                     if viewModel.htmlFiles.indices.contains(displayedIndex) {
-                        PageCard(
-                            file: viewModel.htmlFiles[displayedIndex],
-                            pageNumber: displayedIndex + 1,
-                            total: viewModel.totalPages
-                        )
-                        .rotation3DEffect(
-                            .degrees(rotation),
-                            axis: (x: 0, y: 1, z: 0),
-                            perspective: 0.4
-                        )
-                        .opacity(abs(rotation) < 90 ? 1 : 0)
+                        PageTurnContainer(
+                            displayedIndex: displayedIndex,
+                            goingForward: goingForward
+                        ) {
+                            PageCard(
+                                file: viewModel.htmlFiles[displayedIndex],
+                                pageNumber: displayedIndex + 1,
+                                total: viewModel.totalPages
+                            )
+                        }
                     }
                 }
                 .clipped()
 
                 BookNavigationBar(
                     viewModel: viewModel,
-                    onPrevious: { flipTo(viewModel.currentIndex - 1, forward: false) },
-                    onNext: { flipTo(viewModel.currentIndex + 1, forward: true) },
-                    onGoTo: { index in flipTo(index, forward: index > viewModel.currentIndex) }
+                    onPrevious: { turnPage(to: viewModel.currentIndex - 1, forward: false) },
+                    onNext: { turnPage(to: viewModel.currentIndex + 1, forward: true) },
+                    onGoTo: { index in turnPage(to: index, forward: index > viewModel.currentIndex) }
                 )
             }
         }
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear { displayedIndex = viewModel.currentIndex }
         .onChange(of: viewModel.selectedGroupName) { _ in
-            // Group switch: instant reset, no flip
             isAnimating = false
-            rotation = 0
             displayedIndex = viewModel.currentIndex
         }
         .onChange(of: viewModel.currentIndex) { newIndex in
-            // Skip if already showing the right page (e.g. after a group switch)
             guard !isAnimating, newIndex != displayedIndex else { return }
+            goingForward = newIndex > displayedIndex
             isAnimating = true
-            performFlipAnimation(to: newIndex, forward: newIndex > displayedIndex)
-        }
-    }
-
-    private func flipTo(_ targetIndex: Int, forward: Bool) {
-        guard !isAnimating, viewModel.htmlFiles.indices.contains(targetIndex) else { return }
-        isAnimating = true
-        viewModel.goToPage(targetIndex)
-        performFlipAnimation(to: targetIndex, forward: forward)
-    }
-
-    private func performFlipAnimation(to targetIndex: Int, forward: Bool) {
-        let outAngle: Double = forward ? -90 : 90
-        let inAngle: Double = forward ? 90 : -90
-
-        withAnimation(.easeIn(duration: 0.2)) {
-            rotation = outAngle
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            displayedIndex = targetIndex
-            rotation = inAngle
-            withAnimation(.easeOut(duration: 0.2)) {
-                rotation = 0
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            displayedIndex = newIndex
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
                 isAnimating = false
             }
         }
+    }
+
+    private func turnPage(to targetIndex: Int, forward: Bool) {
+        guard !isAnimating, viewModel.htmlFiles.indices.contains(targetIndex) else { return }
+        goingForward = forward
+        isAnimating = true
+        viewModel.goToPage(targetIndex)
+        displayedIndex = targetIndex
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+            isAnimating = false
+        }
+    }
+}
+
+// MARK: - Page Turn Container
+private struct PageTurnContainer<Content: View>: NSViewRepresentable {
+    let displayedIndex: Int
+    let goingForward: Bool
+    @ViewBuilder let content: () -> Content
+
+    class Coordinator {
+        var previousIndex: Int? = nil
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSHostingView<AnyView> {
+        let view = NSHostingView(rootView: AnyView(content()))
+        view.wantsLayer = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSHostingView<AnyView>, context: Context) {
+        if let prev = context.coordinator.previousIndex, prev != displayedIndex {
+            let transition = CATransition()
+            transition.duration = 0.6
+            transition.type = CATransitionType(rawValue: "pageCurl")
+            transition.subtype = goingForward ? .fromRight : .fromLeft
+            transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            nsView.layer?.add(transition, forKey: kCATransition)
+        }
+        context.coordinator.previousIndex = displayedIndex
+        nsView.rootView = AnyView(content())
     }
 }
 
