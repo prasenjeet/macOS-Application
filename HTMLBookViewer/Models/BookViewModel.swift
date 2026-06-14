@@ -16,7 +16,7 @@ final class BookViewModel: ObservableObject {
     var isLast: Bool { htmlFiles.isEmpty || currentIndex >= htmlFiles.count - 1 }
 
     func loadHTMLFiles() {
-        htmlFiles = HTMLFileScanner.scanDesktop()
+        htmlFiles = HTMLFileScanner.scanDownloads()
         currentIndex = 0
     }
 

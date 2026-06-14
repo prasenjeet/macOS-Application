@@ -1,16 +1,16 @@
 import Foundation
 
 struct HTMLFileScanner {
-    static func scanDesktop() -> [HTMLFile] {
-        guard let desktopURL = FileManager.default
-            .urls(for: .desktopDirectory, in: .userDomainMask)
+    static func scanDownloads() -> [HTMLFile] {
+        guard let downloadsURL = FileManager.default
+            .urls(for: .downloadsDirectory, in: .userDomainMask)
             .first else {
             return []
         }
 
         do {
             let contents = try FileManager.default.contentsOfDirectory(
-                at: desktopURL,
+                at: downloadsURL,
                 includingPropertiesForKeys: [.isRegularFileKey, .nameKey],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
             )
@@ -23,7 +23,7 @@ struct HTMLFileScanner {
                 .sorted { $0.lastPathComponent.localizedCompare($1.lastPathComponent) == .orderedAscending }
                 .map { HTMLFile(url: $0) }
         } catch {
-            print("[HTMLFileScanner] Error scanning Desktop: \(error.localizedDescription)")
+            print("[HTMLFileScanner] Error scanning Downloads: \(error.localizedDescription)")
             return []
         }
     }
