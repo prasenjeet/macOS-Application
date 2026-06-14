@@ -2,7 +2,9 @@ import SwiftUI
 
 struct BookPageView: View {
     @ObservedObject var viewModel: BookViewModel
-    @State private var goingForward: Bool = true
+    @State private var rotation: Double = 0
+    @State private var displayedIndex: Int = 0
+    @State private var isAnimating: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,32 +13,62 @@ struct BookPageView: View {
             } else {
                 ZStack {
                     BookBackground()
-
-                    if let file = viewModel.currentFile {
-                        PageCard(file: file, pageNumber: viewModel.currentIndex + 1, total: viewModel.totalPages)
-                            .id(viewModel.currentIndex)
-                            .transition(pageTransition)
+                    if viewModel.htmlFiles.indices.contains(displayedIndex) {
+                        PageCard(
+                            file: viewModel.htmlFiles[displayedIndex],
+                            pageNumber: displayedIndex + 1,
+                            total: viewModel.totalPages
+                        )
+                        .rotation3DEffect(
+                            .degrees(rotation),
+                            axis: (x: 0, y: 1, z: 0),
+                            perspective: 0.4
+                        )
+                        .opacity(abs(rotation) < 90 ? 1 : 0)
                     }
                 }
-                .animation(.easeInOut(duration: 0.38), value: viewModel.currentIndex)
                 .clipped()
 
-                BookNavigationBar(viewModel: viewModel, goingForward: $goingForward)
+                BookNavigationBar(
+                    viewModel: viewModel,
+                    onPrevious: { flipTo(viewModel.currentIndex - 1, forward: false) },
+                    onNext: { flipTo(viewModel.currentIndex + 1, forward: true) },
+                    onGoTo: { index in flipTo(index, forward: index > viewModel.currentIndex) }
+                )
             }
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear { displayedIndex = viewModel.currentIndex }
+        .onChange(of: viewModel.currentIndex) { newIndex in
+            // Handles navigation from sidebar or other external sources
+            guard !isAnimating else { return }
+            isAnimating = true
+            performFlipAnimation(to: newIndex, forward: newIndex > displayedIndex)
+        }
     }
 
-    private var pageTransition: AnyTransition {
-        goingForward
-            ? .asymmetric(
-                insertion: .move(edge: .trailing).combined(with: .opacity),
-                removal: .move(edge: .leading).combined(with: .opacity)
-            )
-            : .asymmetric(
-                insertion: .move(edge: .leading).combined(with: .opacity),
-                removal: .move(edge: .trailing).combined(with: .opacity)
-            )
+    private func flipTo(_ targetIndex: Int, forward: Bool) {
+        guard !isAnimating, viewModel.htmlFiles.indices.contains(targetIndex) else { return }
+        isAnimating = true
+        viewModel.goToPage(targetIndex)
+        performFlipAnimation(to: targetIndex, forward: forward)
+    }
+
+    private func performFlipAnimation(to targetIndex: Int, forward: Bool) {
+        let outAngle: Double = forward ? -90 : 90
+        let inAngle: Double = forward ? 90 : -90
+
+        withAnimation(.easeIn(duration: 0.2)) {
+            rotation = outAngle
+        } completion: {
+            displayedIndex = targetIndex
+            rotation = inAngle
+            withAnimation(.easeOut(duration: 0.2)) {
+                rotation = 0
+            } completion: {
+                isAnimating = false
+            }
+        }
     }
 }
 
@@ -52,7 +84,6 @@ private struct BookBackground: View {
             endPoint: .bottomTrailing
         )
         .overlay(
-            // Subtle texture pattern
             Canvas { context, size in
                 for x in stride(from: 0, through: size.width, by: 4) {
                     for y in stride(from: 0, through: size.height, by: 4) {
@@ -73,7 +104,6 @@ private struct PageCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Page header strip
             HStack(spacing: 8) {
                 Image(systemName: "doc.richtext.fill")
                     .foregroundColor(.accentColor)
@@ -94,13 +124,11 @@ private struct PageCard: View {
 
             Divider()
 
-            // HTML content rendered in WebKit
             WebView(url: file.url)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
 
-            // Page footer
             HStack {
                 Spacer()
                 Text("Page \(pageNumber) of \(total)")
@@ -115,7 +143,6 @@ private struct PageCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.18), radius: 16, x: 0, y: 6)
         .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
-        // Right edge "pages" illusion
         .overlay(alignment: .trailing) {
             PageEdgeDecoration()
         }
@@ -147,16 +174,14 @@ private struct PageEdgeDecoration: View {
 // MARK: - Navigation Bar
 struct BookNavigationBar: View {
     @ObservedObject var viewModel: BookViewModel
-    @Binding var goingForward: Bool
+    let onPrevious: () -> Void
+    let onNext: () -> Void
+    let onGoTo: (Int) -> Void
 
     var body: some View {
         HStack(spacing: 16) {
-            // Previous
             Button {
-                goingForward = false
-                withAnimation {
-                    viewModel.previousPage()
-                }
+                onPrevious()
             } label: {
                 Label("Previous", systemImage: "chevron.left")
             }
@@ -167,15 +192,11 @@ struct BookNavigationBar: View {
 
             Spacer()
 
-            // Page dots (≤ 20 pages) or progress text (> 20)
             if viewModel.totalPages <= 20 {
                 HStack(spacing: 7) {
                     ForEach(0..<viewModel.totalPages, id: \.self) { index in
                         Button {
-                            goingForward = index > viewModel.currentIndex
-                            withAnimation {
-                                viewModel.goToPage(index)
-                            }
+                            onGoTo(index)
                         } label: {
                             Circle()
                                 .fill(index == viewModel.currentIndex
@@ -207,12 +228,8 @@ struct BookNavigationBar: View {
 
             Spacer()
 
-            // Next
             Button {
-                goingForward = true
-                withAnimation {
-                    viewModel.nextPage()
-                }
+                onNext()
             } label: {
                 Label("Next", systemImage: "chevron.right")
             }
@@ -250,7 +267,7 @@ private struct EmptyBookView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Place HTML files on your Mac's Desktop and\nthey will appear here as book pages.")
+                Text("Place HTML files in your Downloads folder and\nthey will appear here as book pages.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -259,7 +276,7 @@ private struct EmptyBookView: View {
             HStack(spacing: 6) {
                 Image(systemName: "folder.badge.questionmark")
                     .foregroundColor(.accentColor)
-                Text("~/Desktop/*.html  or  ~/Desktop/*.htm")
+                Text("~/Downloads/*.html  or  ~/Downloads/*.htm")
                     .font(.system(.callout, design: .monospaced))
                     .foregroundColor(.secondary)
             }

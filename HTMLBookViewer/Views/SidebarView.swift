@@ -37,7 +37,7 @@ struct SidebarView: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
-                .help("Refresh HTML files from Desktop")
+                .help("Refresh HTML files from Downloads")
             }
         }
     }
@@ -85,7 +85,7 @@ private struct SidebarEmptyView: View {
             Text("No pages yet")
                 .font(.headline)
                 .foregroundColor(.secondary)
-            Text("Add HTML files\nto your Desktop")
+            Text("Add HTML files\nto your Downloads")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
