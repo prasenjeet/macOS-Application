@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 2 - The Art of Code</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 16px;
+            line-height: 1.7;
+            color: #24292e;
+            background: #f6f8fa;
+            padding: 40px 60px;
+        }
+        h1 { font-size: 2em; color: #0366d6; margin-bottom: 6px; }
+        .subtitle { color: #586069; margin-bottom: 32px; font-size: 0.95em; }
+        h2 { font-size: 1.3em; color: #24292e; margin: 28px 0 12px; }
+        p { margin-bottom: 16px; }
+        code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            background: #e1e4e8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #d73a49;
+        }
+        pre {
+            background: #1b1f23;
+            color: #e1e4e8;
+            padding: 20px 24px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        .keyword { color: #f97583; }
+        .string { color: #9ecbff; }
+        .comment { color: #6a737d; font-style: italic; }
+        .type { color: #79b8ff; }
+        .func { color: #b392f0; }
+        .card {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+        hr { border: none; border-top: 1px solid #e1e4e8; margin: 28px 0; }
+    </style>
+</head>
+<body>
+    <div style="font-size:0.8em;letter-spacing:3px;text-transform:uppercase;color:#586069;margin-bottom:4px;">Chapter Two</div>
+    <h1>The Art of Code</h1>
+    <p class="subtitle">How software shapes the modern world — one function at a time.</p>
+    <hr>
+
+    <p>Code is the language of machines, but the best code is written for humans. The machine will faithfully execute whatever you write; it's your fellow developers — and your future self — who need to understand it.</p>
+
+    <h2>Elegance in Simplicity</h2>
+
+    <p>Consider a simple Swift function that reads HTML files from the Desktop:</p>
+
+    <pre><span class="keyword">func</span> <span class="func">scanDesktop</span>() -&gt; [HTMLFile] {
+    <span class="keyword">guard let</span> desktop = FileManager.<span class="func">default</span>
+        .<span class="func">urls</span>(for: .desktopDirectory, in: .userDomainMask)
+        .<span class="func">first</span> <span class="keyword">else</span> { <span class="keyword">return</span> [] }
+
+    <span class="keyword">return</span> (<span class="keyword">try</span>? FileManager.<span class="keyword">default</span>
+        .<span class="func">contentsOfDirectory</span>(at: desktop,
+            includingPropertiesForKeys: <span class="keyword">nil</span>))
+        ?.<span class="func">filter</span> { $0.<span class="func">pathExtension</span> == <span class="string">"html"</span> }
+        .<span class="func">map</span> { <span class="type">HTMLFile</span>(url: $0) }
+        ?? []
+}</pre>
+
+    <div class="card">
+        <strong>Key Principle:</strong> Write code that tells a story. The function above is self-documenting — its name, parameters, and return type explain exactly what it does without a single comment.
+    </div>
+
+    <h2>The SwiftUI Revolution</h2>
+
+    <p>SwiftUI transformed how macOS apps are built by letting developers describe <em>what</em> the UI should look like, not <em>how</em> to construct it. Declarative UI means less code, fewer bugs, and easier iteration.</p>
+
+    <p>The <code>@Published</code> property wrapper and <code>ObservableObject</code> protocol create a reactive data flow — when data changes, the UI updates automatically. This is the magic behind this very app.</p>
+</body>
+</html>
