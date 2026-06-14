@@ -19,11 +19,16 @@ struct BookPageView: View {
                             displayedIndex: displayedIndex,
                             goingForward: goingForward
                         ) {
-                            PageCard(
-                                file: viewModel.htmlFiles[displayedIndex],
-                                pageNumber: displayedIndex + 1,
-                                total: viewModel.totalPages
-                            )
+                            // Re-check bounds inside the closure: updateNSView calls
+                            // content() after SwiftUI renders, by which point htmlFiles
+                            // may have changed (e.g. after a group switch).
+                            if viewModel.htmlFiles.indices.contains(displayedIndex) {
+                                PageCard(
+                                    file: viewModel.htmlFiles[displayedIndex],
+                                    pageNumber: displayedIndex + 1,
+                                    total: viewModel.totalPages
+                                )
+                            }
                         }
                     }
                 }
