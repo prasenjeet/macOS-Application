@@ -298,7 +298,7 @@ private struct EmptyBookView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Place HTML files in your Downloads folder.\nFiles are grouped into books by their first two words.")
+                Text("Place HTML files in your Downloads/Claude folder.\nFiles are grouped into books by their first two words.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -307,7 +307,7 @@ private struct EmptyBookView: View {
             HStack(spacing: 6) {
                 Image(systemName: "folder.badge.questionmark")
                     .foregroundColor(.accentColor)
-                Text("~/Downloads/*.html  or  ~/Downloads/*.htm")
+                Text("~/Downloads/Claude/*.html  or  ~/Downloads/Claude/*.htm")
                     .font(.system(.callout, design: .monospaced))
                     .foregroundColor(.secondary)
             }

@@ -23,7 +23,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>HTMLBookViewer reads HTML files from your Downloads folder to display them as book pages.</string>
+	<string>HTMLBookViewer reads HTML files from the Claude folder inside your Downloads folder to display them as book pages.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024. All rights reserved.</string>
 	<key>NSPrincipalClass</key>

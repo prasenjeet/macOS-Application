@@ -8,9 +8,11 @@ struct HTMLFileScanner {
             return []
         }
 
+        let claudeURL = downloadsURL.appendingPathComponent("Claude", isDirectory: true)
+
         do {
             let contents = try FileManager.default.contentsOfDirectory(
-                at: downloadsURL,
+                at: claudeURL,
                 includingPropertiesForKeys: [.isRegularFileKey, .nameKey],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
             )
@@ -23,7 +25,7 @@ struct HTMLFileScanner {
                 .sorted { $0.lastPathComponent.localizedCompare($1.lastPathComponent) == .orderedAscending }
                 .map { HTMLFile(url: $0) }
         } catch {
-            print("[HTMLFileScanner] Error scanning Downloads: \(error.localizedDescription)")
+            print("[HTMLFileScanner] Error scanning Downloads/Claude: \(error.localizedDescription)")
             return []
         }
     }
