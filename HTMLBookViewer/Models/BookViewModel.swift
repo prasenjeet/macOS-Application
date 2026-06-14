@@ -1,6 +1,14 @@
 import Foundation
 import Combine
 
+struct BookGroup: Identifiable {
+    let name: String
+    let files: [HTMLFile]
+
+    var id: String { name }
+    var pageCount: Int { files.count }
+}
+
 @MainActor
 final class BookViewModel: ObservableObject {
     @Published private(set) var bookGroups: [BookGroup] = []
