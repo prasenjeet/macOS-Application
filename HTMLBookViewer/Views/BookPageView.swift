@@ -39,9 +39,15 @@ struct BookPageView: View {
         }
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear { displayedIndex = viewModel.currentIndex }
+        .onChange(of: viewModel.selectedGroupName) { _ in
+            // Group switch: instant reset, no flip
+            isAnimating = false
+            rotation = 0
+            displayedIndex = viewModel.currentIndex
+        }
         .onChange(of: viewModel.currentIndex) { newIndex in
-            // Handles navigation from sidebar or other external sources
-            guard !isAnimating else { return }
+            // Skip if already showing the right page (e.g. after a group switch)
+            guard !isAnimating, newIndex != displayedIndex else { return }
             isAnimating = true
             performFlipAnimation(to: newIndex, forward: newIndex > displayedIndex)
         }
@@ -60,12 +66,14 @@ struct BookPageView: View {
 
         withAnimation(.easeIn(duration: 0.2)) {
             rotation = outAngle
-        } completion: {
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             displayedIndex = targetIndex
             rotation = inAngle
             withAnimation(.easeOut(duration: 0.2)) {
                 rotation = 0
-            } completion: {
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isAnimating = false
             }
         }
@@ -263,11 +271,11 @@ private struct EmptyBookView: View {
             }
 
             VStack(spacing: 8) {
-                Text("No HTML Pages Found")
+                Text("Library is Empty")
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Place HTML files in your Downloads folder and\nthey will appear here as book pages.")
+                Text("Place HTML files in your Downloads folder.\nFiles are grouped into books by their first two words.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)

@@ -5,31 +5,52 @@ struct SidebarView: View {
 
     var body: some View {
         Group {
-            if viewModel.htmlFiles.isEmpty {
+            if viewModel.bookGroups.isEmpty {
                 SidebarEmptyView()
             } else {
-                List(0..<viewModel.htmlFiles.count, id: \.self) { index in
-                    SidebarRow(
-                        file: viewModel.htmlFiles[index],
-                        pageNumber: index + 1,
-                        isSelected: index == viewModel.currentIndex
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.goToPage(index)
+                List {
+                    ForEach(viewModel.bookGroups) { group in
+                        Section {
+                            ForEach(Array(group.files.enumerated()), id: \.element.id) { index, file in
+                                let isSelected = viewModel.selectedGroupName == group.name
+                                    && viewModel.currentIndex == index
+                                SidebarRow(
+                                    file: file,
+                                    pageNumber: index + 1,
+                                    isSelected: isSelected
+                                )
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    if viewModel.selectedGroupName == group.name {
+                                        viewModel.goToPage(index)
+                                    } else {
+                                        viewModel.selectGroup(group.name, page: index)
+                                    }
+                                }
+                                .listRowBackground(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(isSelected
+                                              ? Color.accentColor.opacity(0.12)
+                                              : Color.clear)
+                                        .padding(.horizontal, 4)
+                                )
+                            }
+                        } header: {
+                            BookGroupHeader(
+                                group: group,
+                                isSelected: viewModel.selectedGroupName == group.name
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.selectGroup(group.name)
+                            }
+                        }
                     }
-                    .listRowBackground(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(index == viewModel.currentIndex
-                                  ? Color.accentColor.opacity(0.12)
-                                  : Color.clear)
-                            .padding(.horizontal, 4)
-                    )
                 }
                 .listStyle(.sidebar)
             }
         }
-        .navigationTitle("Contents")
+        .navigationTitle("Library")
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button {
@@ -40,6 +61,31 @@ struct SidebarView: View {
                 .help("Refresh HTML files from Downloads")
             }
         }
+    }
+}
+
+private struct BookGroupHeader: View {
+    let group: BookGroup
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "book.closed.fill")
+                .font(.system(size: 11))
+                .foregroundColor(isSelected ? .accentColor : .secondary)
+            Text(group.name)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isSelected ? .accentColor : .secondary)
+            Spacer()
+            Text("\(group.pageCount)")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(Capsule())
+        }
+        .padding(.vertical, 2)
     }
 }
 
@@ -79,10 +125,10 @@ private struct SidebarRow: View {
 private struct SidebarEmptyView: View {
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "doc.richtext")
+            Image(systemName: "books.vertical")
                 .font(.system(size: 36))
                 .foregroundColor(.secondary)
-            Text("No pages yet")
+            Text("No books yet")
                 .font(.headline)
                 .foregroundColor(.secondary)
             Text("Add HTML files\nto your Downloads")
