@@ -32,7 +32,12 @@ final class BookViewModel: ObservableObject {
     func loadHTMLFiles() {
         let files = HTMLFileScanner.scanDownloads()
         bookGroups = Self.makeGroups(from: files)
-        selectedGroupName = bookGroups.first?.name
+        selectedGroupName = nil   // always start at bookshelf
+        currentIndex = 0
+    }
+
+    func closeBook() {
+        selectedGroupName = nil
         currentIndex = 0
     }
 
